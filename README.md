@@ -156,7 +156,9 @@ node server/verify-deploy.mjs https://liveroom-xxxx.onrender.com
    git push -u origin main
    ```
 
-2. 注册 [render.com](https://render.com)（邮箱即可，不用信用卡）→ Dashboard → **New → Blueprint** → 选中这个仓库，它会读 `render.yaml` 自动创建服务。
+2. 打开 **https://dashboard.render.com/register** 注册（邮箱即可，不用信用卡）→ **New → Blueprint** → 选中这个仓库，它会读 `render.yaml` 自动创建服务。
+
+   > 国内常见情况：**主站 `render.com` 打不开**（连接超时），但控制台 `dashboard.render.com` 正常。注册、登录、建服务全在控制台，直接用控制台地址就行。部署后给朋友访问的 `*.onrender.com` 域名同样是通的。
 3. 构建完成后拿到 `https://liveroom-xxxx.onrender.com`。
 4. 先跑自检：`node server/verify-deploy.mjs https://liveroom-xxxx.onrender.com`，四项全 PASS 再往下走。
 5. 注册 [uptimerobot.com](https://uptimerobot.com)（免费）→ Add Monitor → 类型 HTTP(s)、URL 填 `https://liveroom-xxxx.onrender.com/api/info`、间隔 5 分钟。这样免费层不会休眠。
@@ -344,6 +346,7 @@ Web 端还能现场新建房间；新建的房间在所有人离开后（临时�
 - **编译通过但部署报 `Install Failed ... code:9568320 / no signature file`** → 光有 `signingConfigs` 不够，`build-profile.json5` 的 `products[0]` 里必须有 `"signingConfig": "default"`。DevEco 的「自动签名」只生成证书和 profile 并写入 `signingConfigs`，不会自动补 product 上的这个引用；补上后 Sync 再 Run。
 - **公网连上但秒断** → 反代没开 WebSocket Upgrade，或页面是 https 却用了 `ws://`（必须用 `wss://`）。
 - **白板上后进来的人看不到之前画的** → 检查 `joined` 消息里的 `strokes` 快照是否正常返回；服务端默认保留最近 600 笔。
+- **打不开 Render 官网** → 主站 `render.com` 国内常超时，直接用控制台 `https://dashboard.render.com/register`；注册、建服务都在控制台完成，`*.onrender.com` 部署域名不受影响。还不行就换手机热点，或把 DNS 改成 `223.5.5.5` / `119.29.29.29`。
 
 ---
 
