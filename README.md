@@ -104,56 +104,46 @@ http://10.64.100.99:3000
 
 ---
 
-## 部署到云：真正不用开电脑
+## 云端部署：免费托管的现实
 
 先说清楚一件事：**只要用 WebSocket，就一定有一个服务端在某台机器上跑**。「不用开电脑」不是把服务端删掉，而是把 `server/` 搬到一台 7×24 在线的机器上。项目代码几乎不用改 —— 服务端本来就监听 `0.0.0.0`、支持 `PORT` 环境变量，Web 端和 HarmonyOS 端也都会自动切 `wss://`。
 
-### 同时满足「不开电脑 + 不同 WiFi + 免费」
+### 先说清楚「免费 + 不开电脑 + 异地可连」的现实
 
-**答案：Zeabur 免费版**。官方文档明确写「无需绑定信用卡，注册即可开始部署」，国内团队做的、中文界面，实测 `zeabur.app` 部署域名从国内可达（0.8 秒）。服务端跑在它的机器上，你的电脑关不关无所谓，朋友在哪个网络都能连。
+2026 年免费 WebSocket 托管普遍收紧，本项目实际查证过的平台现状：
 
-> ⚠️ **关于 Render**：2026 年起它的免费 Web 服务也要**先绑信用卡做身份验证**（Stripe 弹窗，$1 临时授权不实际扣款，但确实得有卡），已不满足「免费」。仓库里的 `render.yaml` 保留着，手上有卡的话仍可用，见方案 A-2。
-
-免费层两个代价，都能缓解：
-
-| 代价 | 缓解办法 |
+| 平台 | 现状 |
 |---|---|
-| 无流量一段时间会休眠，下次访问有冷启动 | UptimeRobot（免费 50 个监控）每 5 分钟 GET 一次 `https://你的域名/api/info` |
-| 聊天历史 / 白板笔画只在内存里，重启清空 | 交作业演示没影响；真要长期留存再加持久化 |
+| Render | 免费层也要**绑信用卡**验证（$1 临时授权，不扣款） |
+| Zeabur | **2026/12/31 停止运营**，12/1 起共享集群暂停，已不能选 |
+| Fly.io / Glitch / Heroku | 免费层已取消或平台关停 |
+| Koyeb | 需 $29 预授权，官网国内打不开 |
+| Cloudflare Workers / Deno Deploy | 免卡且不休眠，但 `workers.dev` / `deno.dev` 部署域名国内连不上 |
+| Railway | 免卡说法不一、额度小、30 天试用，部署域名可达 |
 
-部署完用自检脚本一次验完 HTTP 和 WebSocket：
+结论：**「完全免费 + 不用信用卡/实名 + 7×24 在线 + 国内朋友稳定连」目前没有可靠选择**。四个条件得放弃一个：要么演示时开着电脑，要么接受花钱 / 绑卡 / 实名。
 
-```bash
-node server/verify-deploy.mjs https://liveroom-xxxx.zeabur.app
-```
+### 交作业最稳的做法：本地演示 + 临时公网隧道
 
-四项全 PASS，就说明**电脑关机状态下、朋友用任意网络**都能连。
+不需要任何云平台账号、不需要信用卡，朋友在别的网络照样能连 —— 唯一代价是**演示那段时间电脑要开着**。
 
-### 三条路
+1. 本机跑 `node server.js`。
+2. 在 **CMD / PowerShell**（不要 Git Bash）执行：
 
-| 方案 | 成本 / 门槛 | 国内访问 | 适合 |
-|---|---|---|---|
-| **Zeabur 免费版**（推荐） | 0 元、**无需信用卡** | 快（国内团队） | 交作业、发链接给朋友 |
-| Render 免费版 | 0 元但**需绑卡验证** | 控制台可达 | 手上有卡的话 |
-| 国内学生机 / 轻量服务器 | 约 10 元/月 | 快、稳 | 想长期一直能用 |
+   ```bat
+   cloudflared tunnel --url http://localhost:3000
+   ```
 
-> 也评估过 Cloudflare Workers / Deno Deploy：它们免卡且不休眠，但部署域名 `workers.dev` / `deno.dev` 实测从国内连不上，改写了服务端朋友也访问不了，因此不推荐。
+3. 把打印出来的 `https://xxxx.trycloudflare.com` 发给朋友；手机 App 首页「服务器地址」也填它。
+4. 跑 `node server/verify-deploy.mjs https://xxxx.trycloudflare.com` 自检，四项 PASS 即通。
 
-### 方案 A：Zeabur 一键部署（推荐，不需要信用卡）
+作业要交的项目代码、三个功能的 UI 截图、README 到这里就齐了，**不必卡在云端部署上**。
 
-只需要 `server/Dockerfile` —— 它是通用 Dockerfile，Zeabur 会自动识别；**`render.yaml` 是 Render 专用的，Zeabur 不读它**（留在仓库里不影响）。
+### 如果以后真要 7×24 在线
 
-前置：`LiveRoom/` 已推到 GitHub（见上一节的推送命令），Render / Zeabur 都从 GitHub 拉代码。
-
-1. 打开 **https://dash.zeabur.com**，用 GitHub 账号登录并授权仓库访问。
-2. **New Project** → 选择 `05-Jacey/LiveRoom` → 从 GitHub 部署。
-3. 在服务设置里把 **Root Directory 设为 `server`**（Dockerfile 在 `server/` 子目录），构建方式选 Dockerfile。
-4. 部署完成后在 **Domain / Generate Domain** 生成免费域名，形如 `https://liveroom-xxxx.zeabur.app`。
-5. 先跑自检：`node server/verify-deploy.mjs https://liveroom-xxxx.zeabur.app`，四项全 PASS 再往下。
-6. UptimeRobot 加免费监控，每 5 分钟 GET `https://liveroom-xxxx.zeabur.app/api/info`，防止免费层休眠。
-7. 把域名发给朋友；手机 App 首页「服务器地址」也填它（不带端口），自动走 `wss://`。
-
-> `PORT` 由平台注入，`server.js` 已支持；`HOST` 默认 `0.0.0.0`，无需改动。
+- **国内学生机 / 轻量服务器**（约 10 元/月）+ `pm2` + Nginx 反代：最稳，见下面方案 B。
+- **有信用卡**：Render 免费层可用，`render.yaml` 已备好，见方案 A-2。
+- **腾讯云 CloudBase / 函数计算**：国内快、有免费额度，但需实名，且 WebSocket 需额外配置。
 
 ### 方案 A-2：Render（手上有信用卡再用）
 
