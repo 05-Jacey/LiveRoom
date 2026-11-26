@@ -1,0 +1,21 @@
+{
+  "forms": [
+    {
+      "name": "LiveRoomCard",
+      "displayName": "$string:LiveRoomCard_name",
+      "description": "$string:LiveRoomCard_desc",
+      "src": "./ets/widget/pages/LiveRoomCard.ets",
+      "window": {
+        "designWidth": 720,
+        "autoDesignWidth": true
+      },
+      "colorMode": "light",
+      "isDefault": true,
+      "updateEnabled": true,
+      "scheduledUpdateTime": "07:30",
+      "updateDuration": 1,
+      "defaultDimension": "2*2",
+      "supportDimensions": ["2*2"]
+    }
+  ]
+}

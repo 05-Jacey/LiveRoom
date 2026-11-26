@@ -2,6 +2,7 @@ import { router } from '@kit.ArkUI';
 import { AppConfig } from '../common/Constants';
 import { RoomClient } from '../service/RoomClient';
 import { ChatItem, MemberInfo, ServerEnvelope } from '../model/Protocol';
+import { CardSync } from '../service/CardSync';
 
 interface RoomParams {
   roomId: string;
@@ -76,6 +77,12 @@ struct ChatRoomPage {
         };
         this.messages = this.messages.concat([item]);
         this.scrollBottom();
+        CardSync.push({
+          roomId: this.roomId, roomType: 'chat', roomName: this.roomName,
+          line1: (item.fromName.length > 0 ? item.fromName : '系统') + '：' + item.text,
+          line2: this.memberText.length > 0 ? this.memberText : '点击进入聊天',
+          ts: item.ts
+        });
         break;
       }
       case 'system': {

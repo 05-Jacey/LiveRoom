@@ -1,6 +1,8 @@
-import { router } from '@kit.ArkUI';
+import { router, componentSnapshot } from '@kit.ArkUI';
+import { image } from '@kit.ImageKit';
 import { AppConfig } from '../common/Constants';
 import { RoomClient } from '../service/RoomClient';
+import { CardSync } from '../service/CardSync';
 import {
   Point, MemberInfo, StrokeInfo, ServerEnvelope
 } from '../model/Protocol';
@@ -97,10 +99,16 @@ struct BoardRoomPage {
         }
         break;
       }
+      case 'stroke_end': {
+        // 自己或他人画完一笔 → 截图刷新桌面卡片
+        this.pushBoardCard();
+        break;
+      }
       case 'board_clear':
         this.strokes = [];
         this.current = null;
         this.redraw();
+        this.pushBoardCard();
         break;
       case 'error': {
         this.status = msg.message ?? '出错了';
@@ -117,6 +125,28 @@ struct BoardRoomPage {
       names.push(m.name);
     }
     this.memberText = '在线 ' + list.length + ' 人：' + names.join('、');
+  }
+
+  /** 把当前白板截成图，推送到桌面卡片 */
+  private pushBoardCard(): void {
+    componentSnapshot.get('board_canvas')
+      .then((pm: image.PixelMap): void => {
+        CardSync.push({
+          roomId: this.roomId, roomType: 'board', roomName: this.roomName,
+          line1: this.roomName + ' 白板已更新',
+          line2: '笔迹 ' + this.strokes.length + ' 条',
+          ts: Date.now()
+        }, pm);
+      })
+      .catch((): void => {
+        // 截图失败就只推文字
+        CardSync.push({
+          roomId: this.roomId, roomType: 'board', roomName: this.roomName,
+          line1: this.roomName + ' 白板已更新',
+          line2: '笔迹 ' + this.strokes.length + ' 条',
+          ts: Date.now()
+        });
+      });
   }
 
   private findStroke(id: string): StrokeInfo | null {
@@ -218,6 +248,7 @@ struct BoardRoomPage {
       if (s !== null) {
         this.client.strokeEnd(s.id);
         this.current = null;
+        this.pushBoardCard();
       }
     }
   }
@@ -325,6 +356,7 @@ struct BoardRoomPage {
       .padding({ left: 16, right: 16, top: 8, bottom: 8 });
 
       Canvas(this.ctx)
+        .id('board_canvas')
         .width('100%')
         .layoutWeight(1)
         .backgroundColor('#FFFFFF')

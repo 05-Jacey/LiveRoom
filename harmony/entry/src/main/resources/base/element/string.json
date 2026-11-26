@@ -11,6 +11,14 @@
     {
       "name": "EntryAbility_label",
       "value": "LiveRoom"
+    },
+    {
+      "name": "LiveRoomCard_name",
+      "value": "LiveRoom 小卡片"
+    },
+    {
+      "name": "LiveRoomCard_desc",
+      "value": "最新消息与白板动态，点击进入房间"
     }
   ]
 }
