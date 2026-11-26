@@ -1,11 +1,15 @@
 import { router } from '@kit.ArkUI';
 import { image } from '@kit.ImageKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AppConfig } from '../common/Constants';
 import { RoomClient } from '../service/RoomClient';
 import { CardSync } from '../service/CardSync';
 import {
   Point, MemberInfo, StrokeInfo, ServerEnvelope
 } from '../model/Protocol';
+
+const TAG: string = 'LiveRoomBoard';
 
 interface RoomParams {
   roomId: string;
@@ -127,11 +131,19 @@ struct BoardRoomPage {
     this.memberText = '在线 ' + list.length + ' 人：' + names.join('、');
   }
 
-  /** 把当前白板截成图，推送到桌面卡片（缩小到卡片通道允许的尺寸内） */
+  /** 把当前白板截成图，推送到桌面卡片（自适应缩放到卡片通道允许的尺寸内） */
   private pushBoardCard(): void {
     const ctx: Context = getContext(this).getApplicationContext();
-    this.getUIContext().getComponentSnapshot().get('board_canvas', { scale: 0.25 })
+    // 卡片共享内存单图限制 2MB；保证缩放后宽高都不超过 480px
+    const scale: number = Math.min(1, 480 / this.canvasW, 480 / this.canvasH);
+    hilog.info(0, TAG, 'pushBoardCard canvas=%{public}dx%{public}d scale=%{public}f',
+      Math.round(this.canvasW), Math.round(this.canvasH), scale);
+    this.getUIContext().getComponentSnapshot().get('board_canvas', { scale: scale })
       .then((pm: image.PixelMap): void => {
+        pm.getImageInfo().then((info: image.ImageInfo): void => {
+          hilog.info(0, TAG, 'snapshot ok %{public}dx%{public}d',
+            info.size.width, info.size.height);
+        });
         CardSync.push({
           roomId: this.roomId, roomType: 'board', roomName: this.roomName,
           line1: this.roomName + ' 白板已更新',
@@ -139,7 +151,8 @@ struct BoardRoomPage {
           ts: Date.now()
         }, pm, ctx);
       })
-      .catch((): void => {
+      .catch((e: BusinessError): void => {
+        hilog.warn(0, TAG, 'snapshot failed %{public}d %{public}s', e.code, e.message ?? '');
         // 截图失败就只推文字
         CardSync.push({
           roomId: this.roomId, roomType: 'board', roomName: this.roomName,

@@ -41,6 +41,8 @@ export class CardSync {
       await prefs.flush();
 
       const ids: string[] = await CardSync.loadFormIds(ctx);
+      hilog.info(0, TAG, 'push: ids=%{public}d hasImg=%{public}s',
+        ids.length, pixelMap !== undefined ? 'y' : 'n');
       if (ids.length === 0) {
         return;
       }
@@ -48,6 +50,7 @@ export class CardSync {
       for (const id of ids) {
         try {
           await formProvider.updateForm(id, data);
+          hilog.info(0, TAG, 'updateForm ok %{public}s', id);
         } catch (err) {
           const e: BusinessError = err as BusinessError;
           hilog.warn(0, TAG, 'updateForm %{public}s failed: %{public}d', id, e.code);
