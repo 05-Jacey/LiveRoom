@@ -127,10 +127,10 @@ struct BoardRoomPage {
     this.memberText = '在线 ' + list.length + ' 人：' + names.join('、');
   }
 
-  /** 把当前白板截成图，推送到桌面卡片 */
+  /** 把当前白板截成图，推送到桌面卡片（缩小到卡片通道允许的尺寸内） */
   private pushBoardCard(): void {
     const ctx: Context = getContext(this).getApplicationContext();
-    this.getUIContext().getComponentSnapshot().get('board_canvas')
+    this.getUIContext().getComponentSnapshot().get('board_canvas', { scale: 0.25 })
       .then((pm: image.PixelMap): void => {
         CardSync.push({
           roomId: this.roomId, roomType: 'board', roomName: this.roomName,
