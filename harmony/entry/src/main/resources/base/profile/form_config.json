@@ -5,6 +5,7 @@
       "displayName": "$string:LiveRoomCard_name",
       "description": "$string:LiveRoomCard_desc",
       "src": "./ets/widget/pages/LiveRoomCard.ets",
+      "uiSyntax": "arkts",
       "window": {
         "designWidth": 720,
         "autoDesignWidth": true

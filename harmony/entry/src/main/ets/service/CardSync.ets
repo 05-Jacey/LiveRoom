@@ -1,5 +1,5 @@
 import { formProvider, formBindingData } from '@kit.FormKit';
-import { dataPreferences } from '@kit.ArkData';
+import { preferences } from '@kit.ArkData';
 import { image } from '@kit.ImageKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -32,11 +32,11 @@ function fmtTime(ts: number): string {
  */
 export class CardSync {
 
-  /** 推送一次卡片更新（pixelMap 可选：白板快照图） */
-  public static async push(payload: CardPayload, pixelMap?: image.PixelMap): Promise<void> {
+  /** 推送一次卡片更新（pixelMap 可选：白板快照图；ctx 建议由调用方传入） */
+  public static async push(payload: CardPayload, pixelMap?: image.PixelMap, ctxIn?: Context): Promise<void> {
     try {
-      const ctx: Context = getContext().getApplicationContext();
-      const prefs = await dataPreferences.getPreferences(ctx, { name: PREF_NAME });
+      const ctx: Context = ctxIn !== undefined ? ctxIn : getContext().getApplicationContext();
+      const prefs = await preferences.getPreferences(ctx, { name: PREF_NAME });
       await prefs.put(KEY_SNAPSHOT, JSON.stringify(payload));
       await prefs.flush();
 
@@ -50,12 +50,12 @@ export class CardSync {
           await formProvider.updateForm(id, data);
         } catch (err) {
           const e: BusinessError = err as BusinessError;
-          hilog.warn(TAG, 'updateForm %{public}s failed: %{public}d', id, e.code);
+          hilog.warn(0, TAG, 'updateForm %{public}s failed: %{public}d', id, e.code);
         }
       }
     } catch (err) {
       const e: BusinessError = err as BusinessError;
-      hilog.warn(TAG, 'push failed: %{public}d %{public}s', e.code, e.message ?? '');
+      hilog.warn(0, TAG, 'push failed: %{public}d %{public}s', e.code, e.message ?? '');
     }
   }
 
@@ -72,7 +72,7 @@ export class CardSync {
     };
     try {
       const ctx: Context = ctxIn !== undefined ? ctxIn : getContext().getApplicationContext();
-      const prefs = await dataPreferences.getPreferences(ctx, { name: PREF_NAME });
+      const prefs = await preferences.getPreferences(ctx, { name: PREF_NAME });
       const raw: string = (await prefs.get(KEY_SNAPSHOT, '')) as string;
       if (raw.length === 0) {
         return def;
@@ -109,7 +109,7 @@ export class CardSync {
 
   private static async loadFormIds(ctx: Context): Promise<string[]> {
     try {
-      const prefs = await dataPreferences.getPreferences(ctx, { name: PREF_NAME });
+      const prefs = await preferences.getPreferences(ctx, { name: PREF_NAME });
       const raw: string = (await prefs.get(KEY_FORM_IDS, '')) as string;
       return raw.split(',').filter((s: string): boolean => s.length > 0);
     } catch (err) {
@@ -119,7 +119,7 @@ export class CardSync {
 
   private static async saveFormIds(ctx: Context, ids: string[]): Promise<void> {
     try {
-      const prefs = await dataPreferences.getPreferences(ctx, { name: PREF_NAME });
+      const prefs = await preferences.getPreferences(ctx, { name: PREF_NAME });
       await prefs.put(KEY_FORM_IDS, ids.join(','));
       await prefs.flush();
     } catch (err) {

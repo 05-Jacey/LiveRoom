@@ -11,6 +11,15 @@ interface CardRoomParams {
   roomName: string;
 }
 
+/** 传给房间页的完整参数（ArkTS 不支持交叉类型，单独定义） */
+interface RoomLaunchParams {
+  roomId: string;
+  roomType: string;
+  roomName: string;
+  name: string;
+  host: string;
+}
+
 export default class EntryAbility extends UIAbility {
   /** 来自桌面卡片的跳转参数（roomId 存在即有效） */
   private cardJump: CardRoomParams | null = null;
@@ -69,7 +78,7 @@ export default class EntryAbility extends UIAbility {
       return;
     }
     this.cardJump = null;
-    const params: CardRoomParams & { name: string; host: string } = {
+    const params: RoomLaunchParams = {
       roomId: jump.roomId,
       roomType: jump.roomType,
       roomName: jump.roomName,

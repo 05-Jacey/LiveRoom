@@ -1,4 +1,4 @@
-import { router, componentSnapshot } from '@kit.ArkUI';
+import { router } from '@kit.ArkUI';
 import { image } from '@kit.ImageKit';
 import { AppConfig } from '../common/Constants';
 import { RoomClient } from '../service/RoomClient';
@@ -129,14 +129,15 @@ struct BoardRoomPage {
 
   /** 把当前白板截成图，推送到桌面卡片 */
   private pushBoardCard(): void {
-    componentSnapshot.get('board_canvas')
+    const ctx: Context = getContext(this).getApplicationContext();
+    this.getUIContext().getComponentSnapshot().get('board_canvas')
       .then((pm: image.PixelMap): void => {
         CardSync.push({
           roomId: this.roomId, roomType: 'board', roomName: this.roomName,
           line1: this.roomName + ' 白板已更新',
           line2: '笔迹 ' + this.strokes.length + ' 条',
           ts: Date.now()
-        }, pm);
+        }, pm, ctx);
       })
       .catch((): void => {
         // 截图失败就只推文字
@@ -145,7 +146,7 @@ struct BoardRoomPage {
           line1: this.roomName + ' 白板已更新',
           line2: '笔迹 ' + this.strokes.length + ' 条',
           ts: Date.now()
-        });
+        }, undefined, ctx);
       });
   }
 

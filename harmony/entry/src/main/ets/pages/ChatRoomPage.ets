@@ -82,7 +82,7 @@ struct ChatRoomPage {
           line1: (item.fromName.length > 0 ? item.fromName : '系统') + '：' + item.text,
           line2: this.memberText.length > 0 ? this.memberText : '点击进入聊天',
           ts: item.ts
-        });
+        }, undefined, getContext(this).getApplicationContext());
         break;
       }
       case 'system': {
