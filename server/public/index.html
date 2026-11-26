@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>LiveRoom · 一起聊 / 一起画</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #F5F6F8; color: #1F2329;
+    font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .app { max-width: 760px; margin: 0 auto; padding: 16px 16px 32px; }
+  header { display: flex; align-items: center; gap: 12px; padding: 6px 2px 18px; }
+  .brand { font-size: 20px; font-weight: 600; letter-spacing: .3px; display: flex; align-items: center; gap: 9px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #4F7DF3; display: inline-block; }
+  .state { font-size: 12px; color: #8A8F99; background: #fff; border: 1px solid #E8EAEE; border-radius: 20px; padding: 3px 11px; }
+  .state.ok { color: #2E8B57; border-color: #CBE8D8; }
+  .state.bad { color: #C0563B; border-color: #F0D4CD; }
+  .me { margin-left: auto; font-size: 13px; color: #5F636B; }
+  .card { background: #fff; border: 1px solid #EDEFF2; border-radius: 14px; padding: 18px; margin-bottom: 14px; }
+  h2 { font-size: 15px; font-weight: 600; margin: 0 0 12px; }
+  p { margin: 0 0 12px; color: #8A8F99; font-size: 13px; }
+  .head { display: flex; align-items: center; justify-content: space-between; }
+  .head h2 { margin-bottom: 12px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  input, select {
+    flex: 1; min-width: 0; height: 40px; padding: 0 12px; font-size: 14px;
+    border: 1px solid #E3E6EB; border-radius: 9px; background: #fff; color: #1F2329; outline: none;
+  }
+  input:focus, select:focus { border-color: #4F7DF3; }
+  .btn {
+    flex: 0 0 auto; height: 40px; padding: 0 16px; border: 0; border-radius: 9px;
+    background: #4F7DF3; color: #fff; font-size: 14px; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .link { background: none; border: 0; color: #4F7DF3; font-size: 13px; cursor: pointer; padding: 4px 6px; }
+  .rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .room {
+    text-align: left; border: 1px solid #E8EAEE; border-radius: 11px; padding: 13px;
+    background: #FCFCFD; cursor: pointer; transition: border-color .15s;
+  }
+  .room:hover { border-color: #4F7DF3; }
+  .room .rt { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 7px; }
+  .tag { font-size: 11px; font-weight: 400; padding: 1px 7px; border-radius: 20px; }
+  .tag.chat { background: #E8F0FE; color: #3367C4; }
+  .tag.board { background: #FCEEE6; color: #B2603A; }
+  .room .rd { color: #8A8F99; font-size: 12px; margin-top: 4px; }
+  .room .rn { color: #4F7DF3; font-size: 12px; margin-top: 7px; }
+  .create { border-top: 1px dashed #E8EAEE; padding-top: 13px; }
+  .create select { flex: 0 0 88px; }
+  .create .btn { flex: 0 0 auto; }
+  .tip { font-size: 12px; color: #2E8B57; height: 18px; margin-top: 6px; }
+  .hidden { display: none !important; }
+  .roombar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 2px 2px 14px; }
+  .roomtitle { font-size: 17px; font-weight: 600; }
+  .members { margin-left: auto; font-size: 12px; color: #8A8F99; max-width: 55%; text-align: right; }
+  .chatview { display: flex; flex-direction: column; }
+  .msgs { height: min(52vh, 460px); overflow-y: auto; padding: 4px 2px 14px; margin-bottom: 12px; }
+  .msg { margin-bottom: 12px; display: flex; flex-direction: column; }
+  .msg.mine { align-items: flex-end; }
+  .msg .who { font-size: 11px; color: #9A9FA8; margin: 0 4px 4px; }
+  .bubble {
+    max-width: 78%; padding: 9px 13px; border-radius: 13px; background: #F2F4F7;
+    font-size: 14px; word-break: break-word; white-space: pre-wrap;
+  }
+  .msg.mine .bubble { background: #4F7DF3; color: #fff; }
+  .sys { text-align: center; color: #A0A5AE; font-size: 12px; margin: 10px 0; }
+  .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; font-size: 13px; color: #6B7078; }
+  .toolbar input[type=color] { flex: 0 0 44px; width: 44px; height: 34px; padding: 2px; border-radius: 7px; }
+  .toolbar select { flex: 0 0 76px; height: 34px; }
+  .toolbar #boardHint { margin-left: auto; font-size: 12px; color: #A0A5AE; }
+  canvas { width: 100%; height: min(58vh, 500px); display: block; background: #fff; border: 1px solid #E8EAEE; border-radius: 10px; touch-action: none; cursor: crosshair; }
+  @media (max-width: 520px) {
+    .app { padding: 12px 12px 24px; }
+    .rooms { grid-template-columns: 1fr 1fr; }
+    .create { flex-wrap: wrap; }
+    .create input { flex: 1 1 100%; }
+    .toolbar #boardHint { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><span class="dot"></span>LiveRoom</div>
+    <div class="state" id="state">连接中…</div>
+    <div class="me" id="me"></div>
+  </header>
+
+  <main id="lobby" class="view">
+    <section class="card">
+      <h2>先起个名字</h2>
+      <div class="row">
+        <input id="nick" maxlength="16" placeholder="你的昵称">
+        <button id="saveNick" class="btn">保存</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="head"><h2>房间</h2><button id="refresh" class="link">刷新</button></div>
+      <div id="roomList" class="rooms"></div>
+      <div class="row create">
+        <input id="newRoom" maxlength="20" placeholder="新房间名称">
+        <select id="newType"><option value="chat">聊天</option><option value="board">白板</option></select>
+        <button id="create" class="btn">新建</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>分享给朋友</h2>
+      <p>同一个 WiFi 下，把这个链接发给他们，手机或电脑浏览器打开就能一起聊、一起画，不用安装任何东西。</p>
+      <div class="row"><input id="shareUrl" readonly><button id="copy" class="btn">复制链接</button></div>
+      <div class="tip" id="copyTip"></div>
+    </section>
+  </main>
+
+  <main id="room" class="view hidden">
+    <div class="roombar">
+      <button id="back" class="link">← 返回房间列表</button>
+      <div class="roomtitle" id="roomTitle"></div>
+      <div class="members" id="members"></div>
+    </div>
+
+    <section id="chatView" class="card chatview hidden">
+      <div id="msgs" class="msgs"></div>
+      <div class="row">
+        <input id="chatInput" maxlength="500" placeholder="说点什么…">
+        <button id="send" class="btn">发送</button>
+      </div>
+    </section>
+
+    <section id="boardView" class="card boardview hidden">
+      <div class="toolbar">
+        <span>颜色</span><input type="color" id="color" value="#1F2329">
+        <span>粗细</span>
+        <select id="width">
+          <option value="2">细</option><option value="4" selected>中</option><option value="8">粗</option>
+        </select>
+        <button id="clear" class="link">清空画布</button>
+        <span id="boardHint">在这里画，别人能实时看到</span>
+      </div>
+      <canvas id="canvas"></canvas>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var ws = null, clientId = '', me = '', room = null, members = [], roomList = [];
+  var reconnectTimer = null, heartbeatTimer = null;
+
+  /* ---------------- 连接 ---------------- */
+  function setState(text, cls) {
+    var el = $('state');
+    el.textContent = text;
+    el.className = 'state' + (cls ? ' ' + cls : '');
+  }
+
+  function send(obj) {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+  }
+
+  function connect() {
+    var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    ws = new WebSocket(proto + location.host + '/ws');
+    setState('连接中…');
+    ws.onopen = function () {
+      setState('已连接', 'ok');
+      send({ type: 'list_rooms' });
+      if (room) join(room.id);
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = setInterval(function () { send({ type: 'ping' }); }, 15000);
+    };
+    ws.onmessage = function (ev) {
+      var msg;
+      try { msg = JSON.parse(ev.data); } catch (e) { return; }
+      handle(msg);
+    };
+    ws.onclose = function () {
+      setState('已断开，3 秒后重连', 'bad');
+      clearInterval(heartbeatTimer);
+      clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(connect, 3000);
+    };
+    ws.onerror = function () { /* onclose 会接管 */ };
+  }
+
+  /* ---------------- 消息分发 ---------------- */
+  function handle(msg) {
+    switch (msg.type) {
+      case 'hello':
+        clientId = msg.clientId;
+        roomList = msg.rooms || [];
+        renderRooms();
+        break;
+      case 'rooms':
+        roomList = msg.rooms || [];
+        renderRooms();
+        break;
+      case 'joined':
+        room = msg.room;
+        $('roomTitle').textContent = room.name;
+        $('lobby').classList.add('hidden');
+        $('room').classList.remove('hidden');
+        $('chatView').classList.toggle('hidden', room.type !== 'chat');
+        $('boardView').classList.toggle('hidden', room.type !== 'board');
+        if (room.type === 'chat') {
+          $('msgs').innerHTML = '';
+          (msg.history || []).forEach(function (it) { appendChat(it); });
+        } else {
+          strokes = (msg.strokes || []).map(function (s) {
+            return { id: s.id, color: s.color, width: s.width, points: s.points.slice() };
+          });
+          resizeCanvas();
+        }
+        break;
+      case 'members':
+        members = msg.members || [];
+        renderMembers();
+        break;
+      case 'chat':
+      case 'system':
+        appendChat(msg);
+        break;
+      case 'stroke_start':
+        onRemoteStrokeStart(msg);
+        break;
+      case 'stroke_move':
+        onRemoteStrokeMove(msg);
+        break;
+      case 'stroke_end':
+        onRemoteStrokeEnd(msg);
+        break;
+      case 'board_clear':
+        strokes = [];
+        clearCanvasPixels();
+        break;
+      case 'error':
+        showTip(msg.message || '出错了');
+        break;
+      default:
+        break;
+    }
+  }
+
+  /* ---------------- 大厅 ---------------- */
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function renderRooms() {
+    var box = $('roomList');
+    if (!roomList.length) { box.innerHTML = '<p>还没有房间，新建一个吧</p>'; return; }
+    box.innerHTML = roomList.map(function (r) {
+      return '<button class="room" data-id="' + esc(r.id) + '">' +
+        '<div class="rt">' + esc(r.name) +
+        '<span class="tag ' + esc(r.type) + '">' + (r.type === 'board' ? '白板' : '聊天') + '</span></div>' +
+        '<div class="rd">' + esc(r.desc || '') + '</div>' +
+        '<div class="rn">' + (r.members || 0) + ' 人在线</div></button>';
+    }).join('');
+    Array.prototype.forEach.call(box.querySelectorAll('.room'), function (btn) {
+      btn.addEventListener('click', function () { join(btn.getAttribute('data-id')); });
+    });
+  }
+
+  function renderMembers() {
+    var names = members.map(function (m) { return m.name; });
+    $('members').textContent = names.length ? '在线 ' + names.length + ' 人：' + names.join('、') : '';
+  }
+
+  function join(roomId) {
+    me = ($('nick').value || '').trim() || '匿名';
+    try { localStorage.setItem('liveroom.nick', me); } catch (e) { /* ignore */ }
+    $('me').textContent = me;
+    send({ type: 'join', roomId: roomId, name: me });
+  }
+
+  function showTip(text) {
+    var t = $('copyTip');
+    t.textContent = text;
+    setTimeout(function () { if (t.textContent === text) t.textContent = ''; }, 2500);
+  }
+
+  /* ---------------- 聊天 ---------------- */
+  function appendChat(it) {
+    var box = $('msgs');
+    if (it.type === 'system' || it.kind === 'system') {
+      var sys = document.createElement('div');
+      sys.className = 'sys';
+      sys.textContent = it.text || '';
+      box.appendChild(sys);
+    } else {
+      var wrap = document.createElement('div');
+      wrap.className = 'msg' + (it.fromId === clientId ? ' mine' : '');
+      var who = document.createElement('div');
+      who.className = 'who';
+      who.textContent = (it.fromName || '') + ' · ' + time(it.ts);
+      var bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = it.text || '';
+      wrap.appendChild(who);
+      wrap.appendChild(bubble);
+      box.appendChild(wrap);
+    }
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function time(ts) {
+    var d = new Date(ts || Date.now());
+    return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  }
+
+  function sendChat() {
+    var input = $('chatInput');
+    var text = input.value.trim();
+    if (!text) return;
+    send({ type: 'chat', text: text });
+    input.value = '';
+    input.focus();
+  }
+
+  /* ---------------- 白板 ---------------- */
+  var canvas = $('canvas');
+  var ctx = canvas.getContext('2d');
+  var strokes = [];
+  var strokeMap = Object.create(null);
+  var drawing = null;
+  var lastSent = null;
+  var dpr = 1;
+
+  function resizeCanvas() {
+    var rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    clearCanvasPixels();
+    redraw();
+  }
+
+  function clearCanvasPixels() {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function toPx(p) { return { x: p.x * canvas.width, y: p.y * canvas.height }; }
+
+  function drawSegment(stroke, a, b) {
+    var pa = toPx(a), pb = toPx(b);
+    ctx.strokeStyle = stroke.color;
+    ctx.lineWidth = Math.max(1, stroke.width * dpr);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pa.x, pa.y);
+    ctx.lineTo(pb.x, pb.y);
+    ctx.stroke();
+  }
+
+  function drawDot(stroke, p) {
+    var pp = toPx(p);
+    ctx.fillStyle = stroke.color;
+    ctx.beginPath();
+    ctx.arc(pp.x, pp.y, Math.max(1, stroke.width * dpr) / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function redraw() {
+    clearCanvasPixels();
+    strokes.forEach(function (s) {
+      if (s.points.length === 1) { drawDot(s, s.points[0]); return; }
+      for (var i = 1; i < s.points.length; i++) drawSegment(s, s.points[i - 1], s.points[i]);
+    });
+  }
+
+  function normPoint(ev) {
+    var rect = canvas.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width)),
+      y: Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height))
+    };
+  }
+
+  function newStrokeId() {
+    return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function onRemoteStrokeStart(msg) {
+    var s = { id: msg.id, color: msg.color, width: msg.width, points: [msg.point] };
+    strokes.push(s);
+    strokeMap[s.id] = s;
+    drawDot(s, msg.point);
+  }
+
+  function onRemoteStrokeMove(msg) {
+    var s = strokeMap[msg.id];
+    if (!s) return;
+    var prev = s.points[s.points.length - 1];
+    s.points.push(msg.point);
+    drawSegment(s, prev, msg.point);
+  }
+
+  function onRemoteStrokeEnd(msg) { delete strokeMap[msg.id]; }
+
+  canvas.addEventListener('pointerdown', function (ev) {
+    if (!room || room.type !== 'board') return;
+    canvas.setPointerCapture(ev.pointerId);
+    var p = normPoint(ev);
+    var id = newStrokeId();
+    drawing = { id: id, color: $('color').value, width: Number($('width').value), points: [p] };
+    strokes.push(drawing);
+    strokeMap[id] = drawing;
+    lastSent = p;
+    drawDot(drawing, p);
+    send({ type: 'stroke_start', id: id, color: drawing.color, width: drawing.width, point: p });
+  });
+
+  canvas.addEventListener('pointermove', function (ev) {
+    if (!drawing) return;
+    var p = normPoint(ev);
+    var prev = drawing.points[drawing.points.length - 1];
+    var dist = Math.abs(p.x - lastSent.x) + Math.abs(p.y - lastSent.y);
+    if (dist < 0.002) return;           // 简单节流，避免每个像素都发包
+    drawing.points.push(p);
+    drawSegment(drawing, prev, p);
+    lastSent = p;
+    send({ type: 'stroke_move', id: drawing.id, point: p });
+  });
+
+  function finishStroke() {
+    if (!drawing) return;
+    send({ type: 'stroke_end', id: drawing.id });
+    drawing = null;
+    lastSent = null;
+  }
+  canvas.addEventListener('pointerup', finishStroke);
+  canvas.addEventListener('pointercancel', finishStroke);
+  canvas.addEventListener('pointerleave', finishStroke);
+  window.addEventListener('resize', function () { if (room && room.type === 'board') resizeCanvas(); });
+
+  /* ---------------- 交互绑定 ---------------- */
+  var saved = '';
+  try { saved = localStorage.getItem('liveroom.nick') || ''; } catch (e) { /* ignore */ }
+  $('nick').value = saved || ('访客' + Math.floor(Math.random() * 900 + 100));
+  $('me').textContent = $('nick').value;
+  $('shareUrl').value = location.href.split('#')[0];
+
+  $('saveNick').addEventListener('click', function () {
+    me = $('nick').value.trim() || '匿名';
+    $('me').textContent = me;
+    try { localStorage.setItem('liveroom.nick', me); } catch (e) { /* ignore */ }
+    showTip('昵称已保存');
+  });
+  $('refresh').addEventListener('click', function () { send({ type: 'list_rooms' }); });
+  $('create').addEventListener('click', function () {
+    var name = $('newRoom').value.trim();
+    if (!name) { showTip('先填个房间名'); return; }
+    var type = $('newType').value;
+    var id = (type === 'board' ? 'board-' : 'chat-') + Date.now().toString(36);
+    send({ type: 'create_room', roomId: id, name: name, roomType: type });
+    $('newRoom').value = '';
+    setTimeout(function () { send({ type: 'list_rooms' }); }, 120);
+    join(id);
+  });
+  $('copy').addEventListener('click', function () {
+    var url = $('shareUrl').value;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { showTip('已复制，发给朋友吧'); },
+        function () { fallbackCopy(url); });
+    } else { fallbackCopy(url); }
+  });
+  function fallbackCopy(url) {
+    var ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showTip('已复制，发给朋友吧'); }
+    catch (e) { showTip('请手动复制上面的链接'); }
+    document.body.removeChild(ta);
+  }
+  $('send').addEventListener('click', sendChat);
+  $('chatInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') sendChat(); });
+  $('back').addEventListener('click', function () {
+    if (room) send({ type: 'leave' });
+    room = null; drawing = null;
+    $('room').classList.add('hidden');
+    $('lobby').classList.remove('hidden');
+    send({ type: 'list_rooms' });
+  });
+  $('clear').addEventListener('click', function () {
+    if (!room || room.type !== 'board') return;
+    if (!window.confirm('清空画布？所有人都会看到空白画布。')) return;
+    send({ type: 'board_clear' });
+  });
+
+  connect();
+})();
+</script>
+</body>
+</html>

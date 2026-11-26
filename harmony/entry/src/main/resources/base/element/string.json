@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "LiveRoom 实时房间模块"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "多房间实时聊天与协作白板"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "LiveRoom"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: liveroom
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerContext: ./server
+    dockerfilePath: ./server/Dockerfile
+    healthCheckPath: /api/info
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: HOST
+        value: "0.0.0.0"
