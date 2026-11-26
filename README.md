@@ -110,61 +110,58 @@ http://10.64.100.99:3000
 
 ### 同时满足「不开电脑 + 不同 WiFi + 免费」
 
-**答案就是 Render 免费层**：邮箱注册、不用信用卡；服务端跑在 Render 的机器上，你的电脑关不关都无所谓；拿到的是公网 `https://` 地址，朋友在哪个网络都能连。
+**答案：Zeabur 免费版**。官方文档明确写「无需绑定信用卡，注册即可开始部署」，国内团队做的、中文界面，实测 `zeabur.app` 部署域名从国内可达（0.8 秒）。服务端跑在它的机器上，你的电脑关不关无所谓，朋友在哪个网络都能连。
 
-免费层只有两个代价，都能缓解：
+> ⚠️ **关于 Render**：2026 年起它的免费 Web 服务也要**先绑信用卡做身份验证**（Stripe 弹窗，$1 临时授权不实际扣款，但确实得有卡），已不满足「免费」。仓库里的 `render.yaml` 保留着，手上有卡的话仍可用，见方案 A-2。
+
+免费层两个代价，都能缓解：
 
 | 代价 | 缓解办法 |
 |---|---|
-| 约 15 分钟无请求会休眠，下次访问冷启动 30~50 秒 | UptimeRobot（免费 50 个监控）每 5 分钟 GET 一次 `https://你的域名/api/info`，服务就不会睡 |
+| 无流量一段时间会休眠，下次访问有冷启动 | UptimeRobot（免费 50 个监控）每 5 分钟 GET 一次 `https://你的域名/api/info` |
 | 聊天历史 / 白板笔画只在内存里，重启清空 | 交作业演示没影响；真要长期留存再加持久化 |
 
 部署完用自检脚本一次验完 HTTP 和 WebSocket：
 
 ```bash
-node server/verify-deploy.mjs https://liveroom-xxxx.onrender.com
+node server/verify-deploy.mjs https://liveroom-xxxx.zeabur.app
 ```
 
-四项全 PASS，就说明**电脑关机状态下、朋友用任意网络**都能连。把那个 `https://` 地址发给他，手机 App 首页也填它。
+四项全 PASS，就说明**电脑关机状态下、朋友用任意网络**都能连。
 
 ### 三条路
 
-| 方案 | 成本 | 国内访问 | 适合 |
+| 方案 | 成本 / 门槛 | 国内访问 | 适合 |
 |---|---|---|---|
-| 免费云 PaaS（Render / Koyeb） | 0 元 | 一般，可能偏慢 | 交作业、演示、发链接给朋友 |
+| **Zeabur 免费版**（推荐） | 0 元、**无需信用卡** | 快（国内团队） | 交作业、发链接给朋友 |
+| Render 免费版 | 0 元但**需绑卡验证** | 控制台可达 | 手上有卡的话 |
 | 国内学生机 / 轻量服务器 | 约 10 元/月 | 快、稳 | 想长期一直能用 |
-| Serverless（Cloudflare Workers + Durable Objects） | 0 元、不休眠 | 不稳 | 进阶，需要改写服务端 |
 
-> 免费 PaaS 两个坑：多数免费层**无流量一段时间会休眠**，下次访问要等冷启动（可以用 UptimeRobot 之类每 10 分钟 ping 一次 `/api/info` 缓解）；容器磁盘是临时的，重启后内存里的聊天和画布照样清空。作业演示够用，想真·随时在线还是学生机实在。
+> 也评估过 Cloudflare Workers / Deno Deploy：它们免卡且不休眠，但部署域名 `workers.dev` / `deno.dev` 实测从国内连不上，改写了服务端朋友也访问不了，因此不推荐。
 
-### 方案 A：Render 一键部署（文件已备好）
+### 方案 A：Zeabur 一键部署（推荐，不需要信用卡）
 
-仓库里放好了 `server/Dockerfile`、`server/.dockerignore` 和根目录的 `render.yaml`。
+只需要 `server/Dockerfile` —— 它是通用 Dockerfile，Zeabur 会自动识别；**`render.yaml` 是 Render 专用的，Zeabur 不读它**（留在仓库里不影响）。
 
-1. 把 `LiveRoom/` 推到 **GitHub / GitLab / Bitbucket** 之一（免费仓库即可）。
+前置：`LiveRoom/` 已推到 GitHub（见上一节的推送命令），Render / Zeabur 都从 GitHub 拉代码。
 
-   > Render 只接这三个 Git 平台，**不支持 Gitee / GitCode(AtomGit) / 码云**。已经建在 AtomGit 的话，本地加一个 GitHub remote 双推，或用 GitHub 的 Import repository 镜像过去即可。
-   > 创建仓库时**不要勾选**「初始化 README / .gitignore / LICENSE」，本地已经有这些文件，勾了 push 会冲突。
+1. 打开 **https://dash.zeabur.com**，用 GitHub 账号登录并授权仓库访问。
+2. **New Project** → 选择 `05-Jacey/LiveRoom` → 从 GitHub 部署。
+3. 在服务设置里把 **Root Directory 设为 `server`**（Dockerfile 在 `server/` 子目录），构建方式选 Dockerfile。
+4. 部署完成后在 **Domain / Generate Domain** 生成免费域名，形如 `https://liveroom-xxxx.zeabur.app`。
+5. 先跑自检：`node server/verify-deploy.mjs https://liveroom-xxxx.zeabur.app`，四项全 PASS 再往下。
+6. UptimeRobot 加免费监控，每 5 分钟 GET `https://liveroom-xxxx.zeabur.app/api/info`，防止免费层休眠。
+7. 把域名发给朋友；手机 App 首页「服务器地址」也填它（不带端口），自动走 `wss://`。
 
-   ```bash
-   cd F:/HarmonyOS/LiveRoom
-   git init
-   git add .
-   git commit -m "LiveRoom: WebSocket chat + whiteboard"
-   git branch -M main
-   git remote add origin https://github.com/<你的用户名>/LiveRoom.git
-   git push -u origin main
-   ```
+> `PORT` 由平台注入，`server.js` 已支持；`HOST` 默认 `0.0.0.0`，无需改动。
 
-2. 打开 **https://dashboard.render.com/register** 注册（邮箱即可，不用信用卡）→ **New → Blueprint** → 选中这个仓库，它会读 `render.yaml` 自动创建服务。
+### 方案 A-2：Render（手上有信用卡再用）
 
-   > 国内常见情况：**主站 `render.com` 打不开**（连接超时），但控制台 `dashboard.render.com` 正常。注册、登录、建服务全在控制台，直接用控制台地址就行。部署后给朋友访问的 `*.onrender.com` 域名同样是通的。
-3. 构建完成后拿到 `https://liveroom-xxxx.onrender.com`。
-4. 先跑自检：`node server/verify-deploy.mjs https://liveroom-xxxx.onrender.com`，四项全 PASS 再往下走。
-5. 注册 [uptimerobot.com](https://uptimerobot.com)（免费）→ Add Monitor → 类型 HTTP(s)、URL 填 `https://liveroom-xxxx.onrender.com/api/info`、间隔 5 分钟。这样免费层不会休眠。
-6. 把 `https://liveroom-xxxx.onrender.com` 发给朋友，浏览器打开即用；手机 App 首页「服务器地址」也填它（不带端口）。
+1. 打开 **https://dashboard.render.com/register** 注册，按提示绑卡完成身份验证（$1 临时授权，不扣款）。
+2. **New → Blueprint** → 选仓库，读 `render.yaml` 自动建服务；或手动 New → Web Service → Docker → Docker Context `./server`。
+3. 拿到 `https://liveroom-xxxx.onrender.com`，同样跑自检 + UptimeRobot 保活。
 
-不用 Blueprint 也行：New → Web Service → Runtime 选 Docker → Docker Context 填 `./server`。
+> 主站 `render.com` 国内常超时，但控制台 `dashboard.render.com` 和部署域名 `*.onrender.com` 都可达。
 
 ### 方案 B：国内学生机（最稳）
 
